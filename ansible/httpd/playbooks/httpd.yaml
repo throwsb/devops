@@ -1,0 +1,55 @@
+---
+- hosts: webserver
+  remote_user: ansible
+  become: yes
+  tasks:
+    - name: httpd
+      yum: name=httpd state=latest
+    - name: install mod_ssl
+      yum: name=mod_ssl state=latest
+
+    - name: httpd started
+      service: name=httpd state=started
+    - name: httpd enabled
+      service: name=httpd enabled=yes
+    - name: copy httpd.conf
+      copy: src=/etc/ansible/repo/httpd.conf dest=/etc/httpd/conf backup=yes owner=root group=root
+      notify:
+        - restart httpd
+    - name: copy index
+      copy: src=/etc/ansible/repo/index.html dest=/var/www/html/index.html backup=yes owner=root group=root
+      notify:
+        - restart httpd
+    - name: copy key
+      copy: src=/etc/ansible/repo/example.key dest=/etc/httpd/conf backup=yes owner=root group=root
+      notify:
+        - restart httpd
+    - name: copy crt
+      copy: src=/etc/ansible/repo/example.crt dest=/etc/httpd/conf backup=yes owner=root group=root
+      notify:
+        - restart httpd
+      
+      
+    - name: firewalld
+      yum: name=firewalld state=latest
+    - name: firewalld started
+      service: name=firewalld state=started
+    - name: httpd enabled
+      service: name=firewalld enabled=yes
+
+    - name: firewall ssh
+      firewalld: service=ssh permanent=true state=enabled
+      notify: restart firewalld
+    - name: firewall http
+      firewalld: service=http permanent=true state=enabled
+      notify: restart firewalld
+    - name: firewall https
+      firewalld: service=https permanent=true state=enabled
+      notify: restart firewalld
+
+
+  handlers:
+    - name: restart httpd
+      service: name=httpd state=restarted 
+    - name: restart firewalld
+      service: name=firewalld state=restarted
