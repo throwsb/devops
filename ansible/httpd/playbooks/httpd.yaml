@@ -16,6 +16,10 @@
       copy: src=/etc/ansible/repo/httpd.conf dest=/etc/httpd/conf backup=yes owner=root group=root
       notify:
         - restart httpd
+    - name: copy ssl.conf
+      copy: src=/etc/ansible/repo/ssl.conf dest=/etc/httpd/conf.d backup=yes owner=root group=root
+      notify:
+        - restart httpd
     - name: copy index
       copy: src=/etc/ansible/repo/index.html dest=/var/www/html/index.html backup=yes owner=root group=root
       notify:
