@@ -3,19 +3,25 @@
   remote_user: ansible
   become: yes
   tasks:
-    - name: httpd
-      yum: name=httpd state=latest
-    - name: install mod_ssl
-      yum: name=mod_ssl state=latest
+    - name: install httpd packages
+      yum: name={{ item }} state=latest
+      with_items:
+        - httpd
+        - mod_ssl
 
     - name: httpd started
       service: name=httpd state=started
     - name: httpd enabled
       service: name=httpd enabled=yes
-    - name: copy httpd.conf
-      copy: src=/etc/ansible/repo/httpd.conf dest=/etc/httpd/conf backup=yes owner=root group=root
+
+    - name: copy httpd files to conf
+      copy: src={{ item }} dest=/etc/httpd/conf backup=yes owner=root group=root
+      with_items:
+        - /etc/ansible/repo/httpd.conf
+        - /etc/ansible/repo/example.key
+        - /etc/ansible/repo/example.crt
       notify:
-        - restart httpd
+        - restart httpd 
     - name: copy ssl.conf
       copy: src=/etc/ansible/repo/ssl.conf dest=/etc/httpd/conf.d backup=yes owner=root group=root
       notify:
@@ -24,33 +30,22 @@
       copy: src=/etc/ansible/repo/index.html dest=/var/www/html/index.html backup=yes owner=root group=root
       notify:
         - restart httpd
-    - name: copy key
-      copy: src=/etc/ansible/repo/example.key dest=/etc/httpd/conf backup=yes owner=root group=root
-      notify:
-        - restart httpd
-    - name: copy crt
-      copy: src=/etc/ansible/repo/example.crt dest=/etc/httpd/conf backup=yes owner=root group=root
-      notify:
-        - restart httpd
-      
       
     - name: firewalld
       yum: name=firewalld state=latest
     - name: firewalld started
       service: name=firewalld state=started
-    - name: httpd enabled
+    - name: fiewalld enabled
       service: name=firewalld enabled=yes
 
-    - name: firewall ssh
-      firewalld: service=ssh permanent=true state=enabled
-      notify: restart firewalld
-    - name: firewall http
-      firewalld: service=http permanent=true state=enabled
-      notify: restart firewalld
-    - name: firewall https
-      firewalld: service=https permanent=true state=enabled
-      notify: restart firewalld
-
+    - name: firewalld services
+      firewalld: service={{ item }} permanent=true state=enabled
+      with_items:
+        - ssh
+        - http
+        - https
+      notify: 
+        - restart firewalld
 
   handlers:
     - name: restart httpd
