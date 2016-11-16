@@ -3,49 +3,51 @@
   remote_user: ansible
   become: yes
   tasks:
-    - name: install httpd packages
-      yum: name={{ item }} state=latest
-      with_items:
-        - httpd
-        - mod_ssl
+   - block:
+      - name: install httpd packages
+        yum: name={{ item }} state=latest
+        with_items:
+          - httpd
+          - mod_ssl
 
-    - name: httpd started
-      service: name=httpd state=started
-    - name: httpd enabled
-      service: name=httpd enabled=yes
+      - name: httpd started
+        service: name=httpd state=started
+      - name: httpd enabled
+        service: name=httpd enabled=yes
 
-    - name: copy httpd files to conf
-      copy: src={{ item }} dest=/etc/httpd/conf backup=yes owner=root group=root
-      with_items:
-        - /etc/ansible/repo/httpd.conf
-        - /etc/ansible/repo/example.key
-        - /etc/ansible/repo/example.crt
-      notify:
-        - restart httpd 
-    - name: copy ssl.conf
-      copy: src=/etc/ansible/repo/ssl.conf dest=/etc/httpd/conf.d backup=yes owner=root group=root
-      notify:
-        - restart httpd
-    - name: copy index
-      copy: src=/etc/ansible/repo/index.html dest=/var/www/html/index.html backup=yes owner=root group=root
-      notify:
-        - restart httpd
+      - name: copy httpd files to conf
+        copy: src={{ item }} dest=/etc/httpd/conf backup=yes owner=root group=root
+        with_items:
+          - /etc/ansible/repo/httpd.conf
+          - /etc/ansible/repo/example.key
+          - /etc/ansible/repo/example.crt
+        notify:
+          - restart httpd 
+      - name: copy ssl.conf
+        copy: src=/etc/ansible/repo/ssl.conf dest=/etc/httpd/conf.d backup=yes owner=root group=root
+        notify:
+          - restart httpd
+      - name: copy index
+        copy: src=/etc/ansible/repo/index.html dest=/var/www/html/index.html backup=yes owner=root group=root
+        notify:
+          - restart httpd
       
-    - name: firewalld
-      yum: name=firewalld state=latest
-    - name: firewalld started
-      service: name=firewalld state=started
-    - name: fiewalld enabled
-      service: name=firewalld enabled=yes
+      - name: firewalld
+        yum: name=firewalld state=latest
+      - name: firewalld started
+        service: name=firewalld state=started
+      - name: fiewalld enabled
+        service: name=firewalld enabled=yes
 
-    - name: firewalld services
-      firewalld: service={{ item }} permanent=true state=enabled
-      with_items:
-        - ssh
-        - http
-        - https
-      notify: 
-        - restart firewalld
+      - name: firewalld services
+        firewalld: service={{ item }} permanent=true state=enabled
+        with_items:
+          - ssh
+          - http
+          - https
+        notify: 
+          - restart firewalld
+     when: (ansible_os_family == "RedHat" and ansible_distribution_major_version == "7") 
 
   handlers:
     - name: restart httpd
